@@ -106,21 +106,30 @@ STRUCTX_EXPORT void NAME ## _rem(struct NAME *arr, int i) \
 \
 STRUCTX_EXPORT T NAME ## _get(struct NAME *arr, int i) \
 { \
+        assert(arr != NULL); \
+        assert(i < arr->len); \
+        \
         return arr->data[i]; \
 } \
 \
 STRUCTX_EXPORT int NAME ## _len(struct NAME *arr) \
 { \
+        assert(arr != NULL); \
+        \
         return arr->len; \
 } \
 \
 STRUCTX_EXPORT int NAME ## _cap(struct NAME *arr) \
 { \
+        assert(arr != NULL); \
+        \
         return arr->cap; \
 } \
 \
 STRUCTX_EXPORT T* NAME ## _data(struct NAME *arr) \
 { \
+        assert(arr != NULL); \
+        \
         return arr->data; \
 }
 
