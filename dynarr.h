@@ -52,19 +52,31 @@ STRUCTX_EXPORT void NAME ## _free(struct NAME *arr) \
         } \
 } \
 \
+STRUCTX_EXPORT int NAME ## _resize(struct NAME *arr, int new_cap) \
+{ \
+        assert(arr != NULL); \
+        \
+        T *new_data = realloc(arr->data, new_cap * sizeof(T)); \
+        \
+        if (new_cap == 0 || (new_cap > 0 && new_data)) { \
+                arr->cap = new_cap; \
+                arr->data = new_data; \
+                return 1; \
+        } else return 0; \
+} \
+\
 STRUCTX_EXPORT int NAME ## _grow(struct NAME *arr) \
 { \
         assert(arr != NULL); \
         \
-        int new_cap = (arr->cap == 0) ? 1 : (arr->cap * GROW_FACTOR); \
-        T *new_data = realloc(arr->data, new_cap * sizeof(T)); \
+        return NAME ## _resize(arr, (arr->cap == 0) ? 1 : (arr->cap * GROW_FACTOR)); \
+} \
+\
+STRUCTX_EXPORT int NAME ## _shrink(struct NAME *arr) \
+{ \
+        assert(arr != NULL); \
         \
-        if (new_data) { \
-                arr->cap = new_cap; \
-                arr->data = new_data; \
-                return 1; \
-        } \
-        else return 0; \
+        return NAME ## _resize(arr, arr->len); \
 } \
 \
 STRUCTX_EXPORT void NAME ## _app(struct NAME *arr, T val) \
@@ -90,6 +102,26 @@ STRUCTX_EXPORT void NAME ## _rem(struct NAME *arr, int i) \
         } \
         \
         arr->len--; \
+} \
+\
+STRUCTX_EXPORT T NAME ## _get(struct NAME *arr, int i) \
+{ \
+        return arr->data[i]; \
+} \
+\
+STRUCTX_EXPORT int NAME ## _len(struct NAME *arr) \
+{ \
+        return arr->len; \
+} \
+\
+STRUCTX_EXPORT int NAME ## _cap(struct NAME *arr) \
+{ \
+        return arr->cap; \
+} \
+\
+STRUCTX_EXPORT T* NAME ## _data(struct NAME *arr) \
+{ \
+        return arr->data; \
 }
 
 #endif
