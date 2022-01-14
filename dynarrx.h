@@ -4,118 +4,137 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "structx.h"
+#define DYNARRX_EXPORT static inline
 
-#define DYNARRX(NAME, DELIM, T, SIZE_T, GROW_FACTOR) \
+#define DYNARRX(NAME, FUN, T, SIZE_T, BOOL_T, GROW) \
 \
 struct NAME { \
-        SIZE_T   len; \
-        SIZE_T   cap; \
-        T       *dat; \
+        SIZE_T len, cap; \
+        T     *dat;      \
 }; \
 \
 typedef struct NAME NAME; \
 \
-STRUCTX_EXPORT void NAME ## DELIM ## init(NAME *arr, SIZE_T cap) \
+DYNARRX_EXPORT NAME* FUN ## alloc(SIZE_T cap) \
 { \
-        assert(arr != NULL); \
-        assert(cap >= 0); \
-        arr->len = 0; \
-        arr->cap = cap; \
+        NAME *arr;                          \
+        assert(cap >= 0);                   \
+        arr = malloc(sizeof(*arr));         \
+        if (!arr) return NULL;              \
+        arr->len = 0;                       \
+        arr->cap = cap;                     \
+        arr->dat = malloc(cap * sizeof(T)); \
+        return arr;                         \
+} \
+\
+DYNARRX_EXPORT void FUN ## free(NAME *arr) \
+{ \
+        assert(arr != NULL);                  \
+        if (arr) {                            \
+                arr->len = arr->cap = 0;      \
+                if (arr->dat) free(arr->dat); \
+                free(arr);                    \
+        }                                     \
+} \
+\
+DYNARRX_EXPORT void FUN ## init(NAME *arr, SIZE_T cap) \
+{ \
+        assert(arr != NULL);                \
+        assert(cap >= 0);                   \
+        arr->len = 0;                       \
+        arr->cap = cap;                     \
         arr->dat = malloc(cap * sizeof(T)); \
 } \
 \
-STRUCTX_EXPORT void NAME ## DELIM ## term(NAME *arr) \
+DYNARRX_EXPORT void FUN ## term(NAME *arr) \
 { \
-        assert(arr != NULL); \
-        arr->len = arr->cap = 0; \
+        assert(arr != NULL);          \
+        arr->len = arr->cap = 0;      \
         if (arr->dat) free(arr->dat); \
 } \
 \
-STRUCTX_EXPORT NAME* NAME ## DELIM ## alloc(SIZE_T cap) \
+DYNARRX_EXPORT BOOL_T FUN ## resz(NAME *arr, SIZE_T cap) \
 { \
-        assert(cap >= 0); \
-        NAME *arr = malloc(sizeof(*arr)); \
-        if (arr) NAME ## DELIM ## init(arr, cap); \
-        return arr; \
+        T *dat;                                   \
+        assert(arr != NULL);                      \
+        assert(cap >= 0);                         \
+        dat = realloc(arr->dat, cap * sizeof(T)); \
+        if (cap == 0 || (cap > 0 && dat)) {       \
+                arr->cap = cap;                   \
+                arr->dat = dat;                   \
+                return (BOOL_T)1;                 \
+        } else  return (BOOL_T)0;                 \
 } \
 \
-STRUCTX_EXPORT void NAME ## DELIM ## free(NAME *arr) \
+DYNARRX_EXPORT BOOL_T FUN ## grow(NAME *arr) \
 { \
-        assert(arr != NULL); \
-        if (arr) { \
-                NAME ## DELIM ## term(arr); \
-                free(arr); \
-        } \
+        T     *dat;                                    \
+        SIZE_T cap;                                    \
+        assert(arr != NULL);                           \
+        cap = (arr->cap == 0) ? 1 : (arr->cap * GROW); \
+        dat = realloc(arr->dat, cap * sizeof(T));      \
+        if (cap == 0 || (cap > 0 && dat)) {            \
+                arr->cap = cap;                        \
+                arr->dat = dat;                        \
+                return (BOOL_T)1;                      \
+        } else  return (BOOL_T)0;                      \
 } \
 \
-STRUCTX_EXPORT SIZE_T NAME ## DELIM ## resize(NAME *arr, SIZE_T cap) \
+DYNARRX_EXPORT BOOL_T FUN ## shrk(NAME *arr) \
 { \
-        assert(arr != NULL); \
-        assert(cap >= 0); \
-        T *dat = realloc(arr->dat, cap * sizeof(T)); \
-        if (cap == 0 || (cap > 0 && dat)) { \
-                arr->cap = cap; \
-                arr->dat = dat; \
-                return 1; \
-        } else return 0; \
+        T *dat;                                        \
+        assert(arr != NULL);                           \
+        dat = realloc(arr->dat, arr->len * sizeof(T)); \
+        if (arr->len == 0 || (arr->len > 0 && dat)) {  \
+                arr->cap = arr->len;                   \
+                arr->dat = dat;                        \
+                return (BOOL_T)1;                      \
+        } else  return (BOOL_T)0;                      \
 } \
 \
-STRUCTX_EXPORT SIZE_T NAME ## DELIM ## grow(NAME *arr) \
+DYNARRX_EXPORT void FUN ## app(NAME *arr, T val) \
 { \
-        assert(arr != NULL); \
-        SIZE_T cap = (arr->cap == 0) ? 1 : (arr->cap * GROW_FACTOR); \
-        return NAME ## DELIM ## resize(arr, cap); \
+        assert(arr != NULL);                   \
+        if (arr->len == arr->cap) {            \
+                if (!FUN ## grow(arr)) return; \
+        }                                      \
+        arr->dat[arr->len++] = val;            \
 } \
 \
-STRUCTX_EXPORT SIZE_T NAME ## DELIM ## shrink(NAME *arr) \
+DYNARRX_EXPORT void FUN ## rem(NAME *arr, SIZE_T i) \
 { \
-        assert(arr != NULL); \
-        return NAME ## DELIM ## resize(arr, arr->len); \
+        SIZE_T j;                               \
+        assert(arr != NULL);                    \
+        assert(i < arr->len);                   \
+        for (j = i; j < arr->len; j++) {        \
+                arr->dat[j] = arr->dat[j + 1];  \
+        }                                       \
+        arr->len--;                             \
 } \
 \
-STRUCTX_EXPORT void NAME ## DELIM ## app(NAME *arr, T val) \
+DYNARRX_EXPORT T FUN ## get(NAME *arr, SIZE_T i) \
 { \
-        assert(arr != NULL); \
-        if (arr->len == arr->cap) { \
-                if (!NAME ## DELIM ## grow(arr)) return; \
-        } \
-        arr->dat[arr->len++] = val; \
-} \
-\
-STRUCTX_EXPORT void NAME ## DELIM ## rem(NAME *arr, SIZE_T i) \
-{ \
-        assert(arr != NULL); \
+        assert(arr != NULL);  \
         assert(i < arr->len); \
-        for (SIZE_T j = i; j < arr->len; j++) { \
-                arr->dat[j] = arr->dat[j + 1]; \
-        } \
-        arr->len--; \
+        return arr->dat[i];   \
 } \
 \
-STRUCTX_EXPORT T NAME ## DELIM ## get(NAME *arr, SIZE_T i) \
+DYNARRX_EXPORT SIZE_T FUN ## len(NAME *arr) \
 { \
         assert(arr != NULL); \
-        assert(i < arr->len); \
-        return arr->dat[i]; \
+        return arr->len;     \
 } \
 \
-STRUCTX_EXPORT SIZE_T NAME ## DELIM ## len(NAME *arr) \
+DYNARRX_EXPORT SIZE_T FUN ## cap(NAME *arr) \
 { \
         assert(arr != NULL); \
-        return arr->len; \
+        return arr->cap;     \
 } \
 \
-STRUCTX_EXPORT SIZE_T NAME ## DELIM ## cap(NAME *arr) \
+DYNARRX_EXPORT T* FUN ## dat(NAME *arr) \
 { \
         assert(arr != NULL); \
-        return arr->cap; \
-} \
-\
-STRUCTX_EXPORT T* NAME ## DELIM ## dat(NAME *arr) \
-{ \
-        assert(arr != NULL); \
-        return arr->dat; \
+        return arr->dat;     \
 }
 
 #endif

@@ -1,47 +1,61 @@
-#ifndef STRUCTX_HASHTABX_H
-#define STRUCTX_HASHTABX_H
+#ifndef STRUCTX_HASHOAX_H
+#define STRUCTX_HASHOAX_H
 
 #include <assert.h>
 #include <stdlib.h>
 
-#include "structx.h"
+#define HASHTABX_EXPORT static inline
 
-#define HASHTABX(NAME, DELIM, T, KEY_T, SIZE_T, GROW_FACTOR) \
+#define HASHTABX(NAME, FUN, T, KEY_T, SIZE_T, HASH, GROW) \
 \
 struct NAME { \
-        SIZE_T    cap; \
-        T       **dat; \
+        SIZE_T len, cap; \
+        T    **dat;      \
 }; \
 \
 typedef struct NAME NAME; \
 \
-STRUCTX_EXPORT void NAME ## DELIM ## init(NAME *ht, SIZE_T cap) \
+HASHTABX_EXPORT NAME* FUN ## alloc(SIZE_T cap) \
 { \
-        assert(ht != NULL); \
-        assert(cap >= 0); \
-        ht->cap = cap; \
+        NAME *ht;                          \
+        assert(cap >= 0);                  \
+        ht = malloc(sizeof(*ht));          \
+        ht->len = 0;                       \
+        ht->cap = cap;                     \
+        ht->dat = malloc(cap * sizeof(T)); \
+        return ht;                         \
+} \
+\
+HASHTABX_EXPORT void FUN ## free(NAME *ht) \
+{ \
+        assert(ht != NULL);                 \
+        if (ht) {                           \
+                if (ht->dat) free(ht->dat); \
+                free(ht);                   \
+        }                                   \
+} \
+\
+HASHTABX_EXPORT void FUN ## init(NAME *ht, SIZE_T cap) \
+{ \
+        assert(ht != NULL);                \
+        assert(cap >= 0);                  \
+        ht->cap = cap;                     \
         ht->dat = malloc(cap * sizeof(T)); \
 } \
 \
-STRUCTX_EXPORT void NAME ## DELIM ## term(NAME *ht) \
+HASHTABX_EXPORT void FUN ## term(NAME *ht) \
 { \
-        assert(ht != NULL); \
-        if (ht) free(ht); \
+        assert(ht != NULL);     \
+        if (ht && ht->dat) {    \
+                free(ht->dat);  \
+                ht->dat = NULL; \
+        }                       \
 } \
 \
-STRUCTX_EXPORT NAME* NAME ## DELIM ## alloc(SIZE_T cap) \
+HASHTABX_EXPORT void FUN ## ins(NAME *ht, KEY_T k, T v) \
 { \
-        NAME *ht = malloc(sizeof(*ht)); \
-        NAME ## init(ht, cap); \
-        return ht; \
-} \
-\
-STRUCTX_EXPORT void NAME ## DELIM ## free(NAME *ht) \
-{ \
-        if (ht) { \
-                NAME ## term(ht); \
-                free(ht); \
-        } \
+        SIZE_T i;              \
+        i = HASH(k) % ht->cap; \
 }
 
 #endif
