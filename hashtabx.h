@@ -67,7 +67,8 @@ HASHTABX_EXPORT void FUN ## init(NAME *ht, SIZE_T cap) \
 HASHTABX_EXPORT void FUN ## term(NAME *ht) \
 { \
         assert(ht != NULL);     \
-        if (ht && ht->dat) {    \
+        ht->len = ht->cap = 0;  \
+        if (ht->dat) {          \
                 free(ht->dat);  \
                 ht->dat = NULL; \
         }                       \

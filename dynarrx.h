@@ -52,7 +52,6 @@ DYNARRX_EXPORT void FUN ## free(NAME *arr) \
 { \
         assert(arr != NULL);                  \
         if (arr) {                            \
-                arr->len = arr->cap = 0;      \
                 if (arr->dat) free(arr->dat); \
                 free(arr);                    \
         }                                     \
@@ -69,9 +68,12 @@ DYNARRX_EXPORT void FUN ## init(NAME *arr, SIZE_T cap) \
 \
 DYNARRX_EXPORT void FUN ## term(NAME *arr) \
 { \
-        assert(arr != NULL);          \
-        arr->len = arr->cap = 0;      \
-        if (arr->dat) free(arr->dat); \
+        assert(arr != NULL);     \
+        arr->len = arr->cap = 0; \
+        if (arr->dat) {          \
+                free(arr->dat);  \
+                arr->dat = NULL; \
+        }                        \
 } \
 \
 DYNARRX_EXPORT BOOL_T FUN ## resz(NAME *arr, SIZE_T cap) \
