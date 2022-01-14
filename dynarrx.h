@@ -1,3 +1,24 @@
+/**
+ * 
+ * Author: Jared B. Resch
+ *
+ * This file is part of STRUCTX.
+ *
+ * STRUCTX is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * STRUCTX is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with STRUCTX. If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
 #ifndef STRUCTX_DYNARRX_H
 #define STRUCTX_DYNARRX_H
 
@@ -68,16 +89,16 @@ DYNARRX_EXPORT BOOL_T FUN ## resz(NAME *arr, SIZE_T cap) \
 \
 DYNARRX_EXPORT BOOL_T FUN ## grow(NAME *arr) \
 { \
-        T     *dat;                                    \
-        SIZE_T cap;                                    \
-        assert(arr != NULL);                           \
-        cap = (arr->cap == 0) ? 1 : (arr->cap * GROW); \
-        dat = realloc(arr->dat, cap * sizeof(T));      \
-        if (cap == 0 || (cap > 0 && dat)) {            \
-                arr->cap = cap;                        \
-                arr->dat = dat;                        \
-                return (BOOL_T)1;                      \
-        } else  return (BOOL_T)0;                      \
+        T     *dat;                                            \
+        SIZE_T cap;                                            \
+        assert(arr != NULL);                                   \
+        cap = (arr->cap == 0) ? 1 : (SIZE_T)(arr->cap * GROW); \
+        dat = realloc(arr->dat, cap * sizeof(T));              \
+        if (cap == 0 || (cap > 0 && dat)) {                    \
+                arr->cap = cap;                                \
+                arr->dat = dat;                                \
+                return (BOOL_T)1;                              \
+        } else  return (BOOL_T)0;                              \
 } \
 \
 DYNARRX_EXPORT BOOL_T FUN ## shrk(NAME *arr) \
