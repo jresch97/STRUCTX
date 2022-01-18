@@ -68,8 +68,8 @@ HASHTABX_EXPORT void FUN ## free(NAME *ht) \
                         for (i = 0; i < ht->cap; i++) {  \
                                 n = ht->dat[i];          \
                                 while (n) {              \
-                                        m = n, n = m->n; \
-                                        free(m);         \
+                                        m = n, n = n->n; \
+                                        if (m) free(m);  \
                                 }                        \
                         }                                \
                         free(ht->dat);                   \
@@ -106,7 +106,7 @@ HASHTABX_EXPORT void FUN ## term(NAME *ht) \
                         n = ht->dat[i];          \
                         while (n) {              \
                                 m = n, n = m->n; \
-                                free(m);         \
+                                if (m) free(m);  \
                         }                        \
                 }                                \
                 free(ht->dat);                   \
