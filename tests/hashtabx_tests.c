@@ -42,6 +42,7 @@ int main()
         iht = ihtalloc(1);
         ihtins(iht, "hello", 10);
         ihtins(iht, "world", 20);
+        printf("iht->len=%d\n", iht->len);
         if (ihtget(iht, "hello", &a)) printf("iht[\"%s\"]=%d\n", "hello", a);
         if (ihtget(iht, "world", &b)) printf("iht[\"%s\"]=%d\n", "world", b);
         ihtfree(iht);
