@@ -42,10 +42,8 @@ int main()
         iht = ihtalloc(1);
         ihtins(iht, "hello", 10);
         ihtins(iht, "world", 20);
-        ihtget(iht, "hello", &a);
-        ihtget(iht, "world", &b);        
-        printf("iht[\"%s\"]=%d\n", "hello", a);
-        printf("iht[\"%s\"]=%d\n", "world", b);
+        if (ihtget(iht, "hello", &a)) printf("iht[\"%s\"]=%d\n", "hello", a);
+        if (ihtget(iht, "world", &b)) printf("iht[\"%s\"]=%d\n", "world", b);
         ihtfree(iht);
         return 0;
 }
