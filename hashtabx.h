@@ -42,22 +42,40 @@ typedef struct NAME { \
 \
 HASHTABX_EXPORT NAME* FUN ## alloc(SIZE_T cap) \
 { \
-        NAME *ht;                          \
+        NAME  *ht;                         \
+        SIZE_T i;                          \
         assert(cap >= 0);                  \
         ht = malloc(sizeof(*ht));          \
+        if (!ht) goto errret;              \
         ht->len = 0;                       \
         ht->cap = cap;                     \
         ht->dat = malloc(cap * sizeof(T)); \
+        if (!ht->dat) goto errfht;         \
+        for (i = 0; i < ht->cap; i++) {    \
+                ht->dat[i] = NULL;         \
+        }                                  \
         return ht;                         \
+errfht: free(ht);                          \
+errret: return NULL;                       \
 } \
 \
 HASHTABX_EXPORT void FUN ## free(NAME *ht) \
 { \
-        assert(ht != NULL);                 \
-        if (ht) {                           \
-                if (ht->dat) free(ht->dat); \
-                free(ht);                   \
-        }                                   \
+        SIZE_T i;                                        \
+        NODE  *n, *m;                                    \
+        if (ht) {                                        \
+                if (ht->dat) {                           \
+                        for (i = 0; i < ht->cap; i++) {  \
+                                n = ht->dat[i];          \
+                                while (n) {              \
+                                        m = n, n = m->n; \
+                                        free(m);         \
+                                }                        \
+                        }                                \
+                        free(ht->dat);                   \
+                }                                        \
+                free(ht);                                \
+        }                                                \
 } \
 \
 HASHTABX_EXPORT BOOL_T FUN ## init(NAME *ht, SIZE_T cap) \
@@ -68,19 +86,31 @@ HASHTABX_EXPORT BOOL_T FUN ## init(NAME *ht, SIZE_T cap) \
         ht->len = 0;                          \
         ht->cap = cap;                        \
         ht->dat = malloc(cap * sizeof(NODE)); \
+        if (!ht->dat) goto err;               \
         for (i = 0; i < ht->cap; i++) {       \
                 ht->dat[i] = NULL;            \
         }                                     \
+        return (BOOL_T)1;                     \
+err:    ht->len = ht->cap = 0;                \
+        ht->dat = NULL;                       \
+        return (BOOL_T)0;                     \
 } \
 \
 HASHTABX_EXPORT void FUN ## term(NAME *ht) \
 { \
-        assert(ht != NULL);     \
-        ht->len = ht->cap = 0;  \
-        if (ht->dat) {          \
-                free(ht->dat);  \
-                ht->dat = NULL; \
-        }                       \
+        SIZE_T i;                                \
+        NODE  *n, *m;                            \
+        assert(ht != NULL);                      \
+        if (ht->dat) {                           \
+                for (i = 0; i < ht->cap; i++) {  \
+                        n = ht->dat[i];          \
+                        while (n) {              \
+                                m = n, n = m->n; \
+                                free(m);         \
+                        }                        \
+                }                                \
+                free(ht->dat);                   \
+        }                                        \
 } \
 \
 HASHTABX_EXPORT BOOL_T FUN ## get(NAME *ht, KEY_T k, T *v) \
@@ -121,8 +151,7 @@ HASHTABX_EXPORT BOOL_T FUN ## ins(NAME *ht, KEY_T k, T v) \
                         n->v = v;       \
                         goto suc;       \
                 }                       \
-                p = n;                  \
-                n = n->n;               \
+                p = n, n = n->n;        \
         }                               \
         n = malloc(sizeof(*n));         \
         if (!n) goto err;               \
