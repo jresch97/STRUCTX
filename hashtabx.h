@@ -19,22 +19,26 @@
  *
  */
 
-#ifndef STRUCTX_HASHOAX_H
-#define STRUCTX_HASHOAX_H
+#ifndef STRUCTX_HASHTABX_H
+#define STRUCTX_HASHTABX_H
 
 #include <assert.h>
 #include <stdlib.h>
 
 #define HASHTABX_EXPORT static inline
 
-#define HASHTABX(NAME, FUN, T, KEY_T, SIZE_T, HASH, GROW) \
+#define HASHTABX(NAME, NODE, FUN, T, KEY_T, SIZE_T, BOOL_T, HASH, GROW) \
 \
-struct NAME { \
+typedef struct NODE { \
+        struct NODE *n; \
+        KEY_T        k; \
+        T            v; \
+} NODE; \
+\
+typedef struct NAME { \
         SIZE_T len, cap; \
-        T    **dat;      \
-}; \
-\
-typedef struct NAME NAME; \
+        NODE   **dat;    \
+} NAME; \
 \
 HASHTABX_EXPORT NAME* FUN ## alloc(SIZE_T cap) \
 { \
@@ -56,12 +60,17 @@ HASHTABX_EXPORT void FUN ## free(NAME *ht) \
         }                                   \
 } \
 \
-HASHTABX_EXPORT void FUN ## init(NAME *ht, SIZE_T cap) \
+HASHTABX_EXPORT BOOL_T FUN ## init(NAME *ht, SIZE_T cap) \
 { \
-        assert(ht != NULL);                \
-        assert(cap >= 0);                  \
-        ht->cap = cap;                     \
-        ht->dat = malloc(cap * sizeof(T)); \
+        SIZE_T i;                             \
+        assert(ht != NULL);                   \
+        assert(cap >= 0);                     \
+        ht->len = 0;                          \
+        ht->cap = cap;                        \
+        ht->dat = malloc(cap * sizeof(NODE)); \
+        for (i = 0; i < ht->cap; i++) {       \
+                ht->dat[i] = NULL;            \
+        }                                     \
 } \
 \
 HASHTABX_EXPORT void FUN ## term(NAME *ht) \
@@ -74,10 +83,53 @@ HASHTABX_EXPORT void FUN ## term(NAME *ht) \
         }                       \
 } \
 \
-HASHTABX_EXPORT void FUN ## ins(NAME *ht, KEY_T k, T v) \
+HASHTABX_EXPORT BOOL_T FUN ## get(NAME *ht, KEY_T k, T *v) \
 { \
-        SIZE_T i;              \
-        i = HASH(k) % ht->cap; \
+        SIZE_T i;                         \
+        NODE  *n;                         \
+        assert(ht != NULL);               \
+        assert(v  != NULL);               \
+        i = HASH(k) % ht->cap;            \
+        n = ht->dat[i];                   \
+        while (n) {                       \
+                if (n->k == k) {          \
+                        *v = n->v;        \
+                        return (BOOL_T)1; \
+                }                         \
+                n = n->n;                 \
+        }                                 \
+        return (BOOL_T)0;                 \
+} \
+\
+HASHTABX_EXPORT BOOL_T FUN ## ins(NAME *ht, KEY_T k, T v) \
+{ \
+        SIZE_T i;                         \
+        NODE  *n, *p;                     \
+        assert(ht != NULL);               \
+        i = HASH(k) % ht->cap;            \
+        n = ht->dat[i], p = NULL;         \
+        if (!n) {                         \
+                n = malloc(sizeof(*n));   \
+                if (!n) return (BOOL_T)0; \
+                n->k = k, n->v = v;       \
+                ht->dat[i] = n;           \
+                ht->len++;                \
+                return (BOOL_T)1;         \
+        }                                 \
+        while (n) {                       \
+                if (n->k == k) {          \
+                        n->v = v;         \
+                        return (BOOL_T)1; \
+                }                         \
+                p = n;                    \
+                n = n->n;                 \
+        }                                 \
+        if (!p) return (BOOL_T)0;         \
+        n = malloc(sizeof(*n));           \
+        if (!n) return (BOOL_T)0;         \
+        n->k = k, n->v = v, p->n = n;     \
+        ht->len++;                        \
+        return (BOOL_T)1;                 \
 }
 
 #endif

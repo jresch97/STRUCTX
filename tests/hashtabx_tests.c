@@ -19,9 +19,12 @@
  *
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "hashtabx.h"
 
-int djb2(const char *s)
+static inline int djb2(const char *s)
 {
         /* http://www.cse.yorku.ca/~oz/hash.html */
         int h, c;
@@ -30,13 +33,19 @@ int djb2(const char *s)
         return h;
 }
 
-HASHTABX(IHASHTAB, iht, int, const char*, int, djb2, 1.75)
+HASHTABX(IHASHTAB, INODE, iht, int, const char*, int, int, djb2, 1.75)
 
 int main()
 {
         IHASHTAB *iht;
-
-        iht = ihtalloc(257);
-
+        int       a, b;
+        iht = ihtalloc(1);
+        ihtins(iht, "hello", 10);
+        ihtins(iht, "world", 20);
+        ihtget(iht, "hello", &a);
+        ihtget(iht, "world", &b);        
+        printf("iht[\"%s\"]=%d\n", "hello", a);
+        printf("iht[\"%s\"]=%d\n", "world", b);
+        ihtfree(iht);
         return 0;
 }
