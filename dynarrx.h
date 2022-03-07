@@ -25,7 +25,9 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#define DYNARRX_EXPORT static inline
+#ifndef DYNARRX_EXPORT
+#define DYNARRX_EXPORT
+#endif
 
 #define DYNARRX(NAME, FUN, T, SIZE_T, BOOL_T, GROW) \
 \

@@ -1,12 +1,12 @@
 /**
  *
- * Copyright (C) 2021 Jared B. Resch
+ * Copyright (C) 2021-2022 Jared B. Resch
  *
  * This file is part of STRUCTX.
  * 
  * STRUCTX is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
+ * published by the Free Software Founentsion, either version 3 of the
  * License, or (at your option) any later version.
  * 
  * STRUCTX is distributed in the hope that it will be useful,
@@ -25,140 +25,147 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#define HASHTABX_EXPORT static inline
+#ifndef HASHTABX_EXPORT
+#define HASHTABX_EXPORT
+#endif
 
-#define HASHTABX(NAME, NODE, FUN, T, KEY_T, SIZE_T, BOOL_T, HASH, GROW) \
+#define HASHTABX(HASHTAB_S, ENTRY_S, FN, KEY_T, VAL_T, HASH_FN, EQ_FN) \
 \
-typedef struct NODE { \
-        struct NODE *n; \
-        KEY_T        k; \
-        T            v; \
-} NODE; \
+struct ENTRY_S { \
+        KEY_T key; \
+        VAL_T val; \
+        struct ENTRY_S *next; \
+}; \
 \
-typedef struct NAME { \
-        SIZE_T len, cap; \
-        NODE **dat;      \
-} NAME; \
+struct HASHTAB_S { \
+        size_t len, cap; \
+        double max_load, grow_fact; \
+        struct ENTRY_S **ents; \
+}; \
 \
-HASHTABX_EXPORT NAME* FUN ## alloc(SIZE_T cap) \
+HASHTABX_EXPORT int FN ## init(struct HASHTAB_S *ht, \
+			       size_t cap, \
+			       double max_load, \
+			       double grow_fact) \
 { \
-        NAME  *ht;                         \
-        SIZE_T i;                          \
-        assert(cap >= 0);                  \
-        ht = malloc(sizeof(*ht));          \
-        if (!ht) goto errret;              \
-        ht->len = 0;                       \
-        ht->cap = cap;                     \
-        ht->dat = malloc(cap * sizeof(T)); \
-        if (!ht->dat) goto errfht;         \
-        for (i = 0; i < ht->cap; i++) {    \
-                ht->dat[i] = NULL;         \
-        }                                  \
-        return ht;                         \
-errfht: free(ht);                          \
-errret: return NULL;                       \
+        assert(ht); \
+        assert(max_load >= 0.0); \
+        assert(grow_fact >= 1.0); \
+        ht->len = 0; \
+        ht->cap = cap; \
+        ht->max_load = max_load; \
+        ht->grow_fact = grow_fact; \
+        ht->ents = calloc(cap, sizeof(*ht->ents)); \
+        if (!ht->ents) return 0; \
+        return 1; \
 } \
 \
-HASHTABX_EXPORT void FUN ## free(NAME *ht) \
+HASHTABX_EXPORT void FN ## term(struct HASHTAB_S *ht) \
 { \
-        SIZE_T i;                                        \
-        NODE  *n, *m;                                    \
-        if (ht) {                                        \
-                if (ht->dat) {                           \
-                        for (i = 0; i < ht->cap; i++) {  \
-                                n = ht->dat[i];          \
-                                while (n) {              \
-                                        m = n, n = n->n; \
-                                        if (m) free(m);  \
-                                }                        \
-                        }                                \
-                        free(ht->dat);                   \
-                }                                        \
-                free(ht);                                \
-        }                                                \
+        struct ENTRY_S *curr, *tmp; \
+        size_t i; \
+        assert(ht); \
+        for (i = 0; i < ht->cap; i++) { \
+                curr = ht->ents[i]; \
+                while (curr) { \
+                        tmp = curr; \
+                        curr = curr->next; \
+                        if (tmp) free(tmp); \
+                } \
+        } \
+        free(ht->ents); \
 } \
 \
-HASHTABX_EXPORT BOOL_T FUN ## init(NAME *ht, SIZE_T cap) \
+HASHTABX_EXPORT struct HASHTAB_S *FN ## alloc(size_t cap, \
+ 					      double max_load, \
+ 					      double grow_fact) \
 { \
-        SIZE_T i;                             \
-        assert(ht != NULL);                   \
-        assert(cap >= 0);                     \
-        ht->len = 0;                          \
-        ht->cap = cap;                        \
-        ht->dat = malloc(cap * sizeof(NODE)); \
-        if (!ht->dat) goto err;               \
-        for (i = 0; i < ht->cap; i++) {       \
-                ht->dat[i] = NULL;            \
-        }                                     \
-        return (BOOL_T)1;                     \
-err:    ht->len = ht->cap = 0;                \
-        ht->dat = NULL;                       \
-        return (BOOL_T)0;                     \
+        struct HASHTAB_S *ht; \
+        assert(max_load >= 0.0); \
+        assert(grow_fact >= 1.0); \
+        ht = malloc(sizeof(*ht)); \
+        if (!ht) return NULL; \
+        ht->len = 0; \
+        ht->cap = cap; \
+        ht->max_load = max_load; \
+        ht->grow_fact = grow_fact; \
+        ht->ents = calloc(cap, sizeof(*ht->ents)); \
+        if (!ht->ents) { \
+                free(ht); \
+                return NULL; \
+        } \
+        return ht; \
 } \
 \
-HASHTABX_EXPORT void FUN ## term(NAME *ht) \
+HASHTABX_EXPORT void FN ## free(struct HASHTAB_S *ht) \
 { \
-        SIZE_T i;                                \
-        NODE  *n, *m;                            \
-        assert(ht != NULL);                      \
-        if (ht->dat) {                           \
-                for (i = 0; i < ht->cap; i++) {  \
-                        n = ht->dat[i];          \
-                        while (n) {              \
-                                m = n, n = m->n; \
-                                if (m) free(m);  \
-                        }                        \
-                }                                \
-                free(ht->dat);                   \
-        }                                        \
+        struct ENTRY_S *curr, *tmp; \
+        size_t i; \
+        assert(ht); \
+        for (i = 0; i < ht->cap; i++) { \
+                curr = ht->ents[i]; \
+                while (curr) { \
+                        tmp = curr; \
+                        curr = curr->next; \
+                        free(tmp); \
+                } \
+        } \
+        free(ht->ents); \
+        free(ht); \
 } \
 \
-HASHTABX_EXPORT BOOL_T FUN ## get(NAME *ht, KEY_T k, T *v) \
+HASHTABX_EXPORT int FN ## lookup(struct HASHTAB_S *ht, \
+                                 KEY_T key, VAL_T *val) \
 { \
-        SIZE_T i;                         \
-        NODE  *n;                         \
-        assert(ht != NULL);               \
-        assert(v  != NULL);               \
-        i = HASH(k) % ht->cap;            \
-        n = ht->dat[i];                   \
-        while (n) {                       \
-                if (n->k == k) {          \
-                        *v = n->v;        \
-                        return (BOOL_T)1; \
-                }                         \
-                n = n->n;                 \
-        }                                 \
-        return (BOOL_T)0;                 \
+        struct ENTRY_S *curr; \
+        size_t i; \
+        assert(ht); \
+        i = HASH_FN(key) % ht->cap; \
+        curr = ht->ents[i]; \
+        while (curr) { \
+                if (EQ_FN(key, curr->key)) { \
+                        if (val) *val = curr->val; \
+                        return 1; \
+                } \
+                curr = curr->next; \
+        } \
+        return 0; \
 } \
 \
-HASHTABX_EXPORT BOOL_T FUN ## ins(NAME *ht, KEY_T k, T v) \
+HASHTABX_EXPORT int FN ## insert(struct HASHTAB_S *ht, \
+                                 KEY_T key, VAL_T val) \
 { \
-        SIZE_T i;                                  \
-        NODE  *n, *p;                              \
-        assert(ht != NULL);                        \
-        i = HASH(k) % ht->cap;                     \
-        n = ht->dat[i];                            \
-        if (!n) {                                  \
-                n = malloc(sizeof(*n));            \
-                if (!n) goto err;                  \
-                n->k = k, n->v = v, n->n = NULL;   \
-                ht->dat[i] = n;                    \
-                ht->len++;                         \
-                goto suc;                          \
-        }                                          \
-        while (n) {                                \
-                if (n->k == k) {                   \
-                        n->v = v;                  \
-                        goto suc;                  \
-                }                                  \
-                p = n, n = n->n;                   \
-        }                                          \
-        n = malloc(sizeof(*n));                    \
-        if (!n) goto err;                          \
-        n->k = k, n->v = v, n->n = NULL, p->n = n; \
-        ht->len++;                                 \
-suc:    return (BOOL_T)1;                          \
-err:    return (BOOL_T)0;                          \
+        struct ENTRY_S *curr, *prev; \
+        size_t i; \
+        assert(ht); \
+        i = HASH_FN(key) % ht->cap; \
+        if (!ht->ents[i]) { \
+                curr = malloc(sizeof(*curr)); \
+                if (!curr) return 0; \
+                curr->key = key; \
+                curr->val = val; \
+                curr->next = NULL; \
+                ht->ents[i] = curr; \
+                ht->len++; \
+                return 1; \
+        } \
+        curr = ht->ents[i]; \
+        while (curr) { \
+                if (EQ_FN(key, curr->key)) { \
+                        curr->val = val; \
+                        return 1; \
+                } \
+                prev = curr; \
+                curr = curr->next; \
+        } \
+        curr = malloc(sizeof(*curr)); \
+        if (!curr) return 0; \
+        curr->key = key; \
+        curr->val = val; \
+        curr->next = NULL; \
+        prev->next = curr; \
+        ht->len++; \
+        return 1; \
 }
 
 #endif

@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (C) 2021 Jared B. Resch
+ * Copyright (C) 2021-2022 Jared B. Resch
  *
  * This file is part of STRUCTX.
  * 
@@ -21,30 +21,45 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "hashtabx.h"
 
-static inline int djb2(const char *s)
+static int djb2(const char *s)
 {
-        /* http://www.cse.yorku.ca/~oz/hash.html */
-        int h, c;
-        h = 5381;
+	/* http://www.cse.yorku.ca/~oz/hash.html */
+        int h = 5381, c;
         while ((c = *s++)) h = ((h << 5) + h) + c;
         return h;
 }
 
-HASHTABX(IHASHTAB, INODE, iht, int, const char*, int, int, djb2, 1.75)
-
-int main()
+static int streq(const char *s1, const char *s2)
 {
-        IHASHTAB *iht;
-        int       a, b;
-        iht = ihtalloc(1);
-        ihtins(iht, "hello", 10);
-        ihtins(iht, "world", 20);
-        printf("iht->len=%d\n", iht->len);
-        if (ihtget(iht, "hello", &a)) printf("iht[\"%s\"]=%d\n", "hello", a);
-        if (ihtget(iht, "world", &b)) printf("iht[\"%s\"]=%d\n", "world", b);
-        ihtfree(iht);
-        return 0;
+	return strcmp(s1, s2) == 0;
+}
+
+HASHTABX(IHT_S, INODE_S, iht_, const char *, int, djb2, streq)
+
+typedef struct   IHT_S IHT;
+typedef struct INODE_S INODE;
+
+int main(void)
+{
+        IHT *iht;
+        int a, b;
+        iht = iht_alloc(257, 0.5, 1.5);
+        iht_insert(iht, "hello", 1);
+        iht_insert(iht, "world", 2);
+        printf("iht->len=%lu\n", iht->len);
+        printf("iht->cap=%lu\n", iht->cap);
+        printf("iht->max_load=%.1f\n", iht->max_load);
+        printf("iht->grow_fact=%.1f\n", iht->grow_fact);
+        if (iht_lookup(iht, "hello", &a)) {
+        	printf("iht[\"%s\"]=%d\n", "hello", a);
+	}
+        if (iht_lookup(iht, "world", &b)) {
+        	printf("iht[\"%s\"]=%d\n", "world", b);
+	}
+        iht_free(iht);
+        return EXIT_SUCCESS;
 }

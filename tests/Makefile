@@ -1,7 +1,7 @@
 CC = gcc
-CFLAGS = -std=c99 -pedantic -Wall -I../
+CFLAGS = -ansi -pedantic -Wall -I../
 
-all: clean dynarrx_tests.out hashtabx_tests.out
+all: clean hashtabx_tests.out
 
 dynarrx_tests.out: dynarrx_tests.c
 	$(CC) $(CFLAGS) -o $@ $^
